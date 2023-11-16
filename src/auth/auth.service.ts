@@ -3,20 +3,20 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LoginDto } from './dto/login.dto';
-import { Model } from 'mongoose';
-import { User } from './entities/user.entity';
-import { SignUpDto } from './dto/signup.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
+import { Model } from 'mongoose';
+import { TokensService } from 'src/tokens/tokens.service';
+import { LoginDto } from './dto/login.dto';
+import { SignUpDto } from './dto/signup.dto';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    private jwtService: JwtService,
+    private tokensService: TokensService,
     private configService: ConfigService,
   ) {}
 
@@ -37,9 +37,7 @@ export class AuthService {
     }
 
     if (user && isPasswordValid) {
-      const access_token = await this.generateAccessToken(user);
-      const refresh_token = await this.generateRefreshToken(user);
-      return { access_token, refresh_token };
+      return await this.tokensService.generateTokens(user);
     }
   }
 
@@ -60,9 +58,7 @@ export class AuthService {
     );
 
     if (userCreated) {
-      const access_token = await this.generateAccessToken(userCreated);
-      const refresh_token = await this.generateRefreshToken(userCreated);
-      return { access_token, refresh_token };
+      return await this.tokensService.generateTokens(userCreated);
     }
   }
 
@@ -83,27 +79,5 @@ export class AuthService {
     );
 
     return hashedPassword;
-  }
-
-  private async generateAccessToken(user: User) {
-    const payload = {
-      sub: user._id,
-      username: user.name,
-    };
-    return this.jwtService.sign(payload, {
-      secret: this.configService.get('ACCESS_JWT_SECRET'),
-      expiresIn: '2h',
-    });
-  }
-
-  private async generateRefreshToken(user: any): Promise<string> {
-    const payload = {
-      sub: user._id,
-      username: user.name,
-    };
-    return this.jwtService.sign(payload, {
-      secret: this.configService.get('REFRESH_JWT_SECRET'),
-      expiresIn: '7d',
-    });
   }
 }
