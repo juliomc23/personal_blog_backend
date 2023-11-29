@@ -1,16 +1,17 @@
-import { Module } from '@nestjs/common';
-import { AuthModule } from './auth/auth.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { TokensModule } from './tokens/tokens.module';
+import { Module } from "@nestjs/common";
+import { AuthModule } from "./auth/auth.module";
+import { MongooseModule } from "@nestjs/mongoose";
+import { ConfigModule } from "@nestjs/config";
+import { TokensModule } from "./tokens/tokens.module";
+import { appConfig } from "./config/app.config";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env',
+      load: [appConfig],
       isGlobal: true,
     }),
-    MongooseModule.forRoot('mongodb://127.0.0.1:27017/blog'),
+    MongooseModule.forRoot(process.env.MONGO_DB_URL),
     AuthModule,
     TokensModule,
   ],
